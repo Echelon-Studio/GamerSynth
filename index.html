@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<script type="text/javascript">
+			window.addEventListener("gamepadconnected", function(e) {
+				console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+			    e.gamepad.index, e.gamepad.id,
+			    e.gamepad.buttons.length, e.gamepad.axes.length);
+			    gameLoop();
+			});
+
+			function buttonPressed(b) {
+				if (typeof(b) == "object") {
+					return b.pressed;
+				}
+				return b == 1.0;
+			}
+
+			function gameLoop() {
+				var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads : []);
+				if (!gamepads) {
+					return;
+				}
+
+
+				var gp = gamepads[0];
+				for (var i in gp.buttons) {
+					if (buttonPressed(gp.buttons[i])) {
+						console.log(gp.buttons[i] + " was pressed!");
+					}
+				}
+				
+			  start = requestAnimationFrame(gameLoop);
+			}
+		</script>
+	</body>
