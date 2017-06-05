@@ -39,11 +39,13 @@ function reportOnGamepad(gp) {
 
 
 $(document).ready(function(){
+    console.log("Loading gamepad");
 	var wrapper = new GamepadWrapper();
 	if (!wrapper.supported) {
     	var prompt = "Sorry, your browser does not have gamepad support!";
         $("#gamepadPrompt").text(prompt);
 	} else {
+        console.log("Gamepad loaded");
         wrapper.addGamepadListener("html", function(gamepad){
             console.log(wrapper.mapping);
             console.log(wrapper.gamepad);

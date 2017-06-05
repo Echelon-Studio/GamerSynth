@@ -42,28 +42,6 @@
 
 **/
 
-// Opera 8.0+
-var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
-
-// Firefox 1.0+
-var isFirefox = typeof InstallTrigger !== 'undefined';
-
-// Safari 3.0+ "[object HTMLElementConstructor]" 
-var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
-
-// Internet Explorer 6-11
-var isIE = /*@cc_on!@*/false || !!document.documentMode;
-
-// Edge 20+
-var isEdge = !isIE && !!window.StyleMedia;
-
-// Chrome 1+
-var isChrome = !!window.chrome && !!window.chrome.webstore;
-
-// Blink engine detection
-var isBlink = (isChrome || isOpera) && !!window.CSS;
-
-
 function GamepadWrapper() {
 	this.supported = "getGamepads" in navigator;
 	this.gamepadConnected = false;
@@ -203,25 +181,28 @@ function GamepadWrapper() {
 				var mapNames = MAPPING_NAMES[_this.mapScheme];
 				if (mapNames) {
 					var map = MAPPINGS[_this.mapScheme];
-					if (!isFirefox) {
-						for (var j in mapNames.buttons) {
-							var controlName = mapNames.buttons[j];
-							var control = map.buttons[controlName];
-							control.updateListeners(_this.gamepad.buttons[j]);
-							//console.log("Updated button " + controlName + "to " + control.value);
-						};
-					} else {
-						for (var j in mapNames.buttons) {
-							var controlName = mapNames.buttons[j];
-							var control = map.buttons[controlName];
-							control.updateListeners(_this.gamepad.buttons[j].value);
-							//console.log("Updated button " + controlName + "to " + control.value);
-						};
-					}
+
+					for (var j in mapNames.buttons) {
+						var controlName = mapNames.buttons[j];
+						var control = map.buttons[controlName];
+
+						// chrome hotfix test
+						var gamepad = navigator.getGamepads()[0];
+						control.updateListeners(gamepad.buttons[j].value);
+
+						//control.updateListeners(_this.gamepad.buttons[j].value);
+
+						//console.log("Updated button " + controlName + "to " + control.value);
+					};
 					for (var j in mapNames.axes) {
 						var controlName = mapNames.axes[j];
 						var control = map.axes[controlName];
-						control.updateListeners(_this.gamepad.axes[j]);
+
+						//chrome hotfix test
+						var gamepad = navigator.getGamepads()[0];
+						control.updateListeners(gamepad.axes[j]);
+
+						//control.updateListeners(_this.gamepad.axes[j]);
 						//console.log("Updated axis " + controlName + "to " + control.value);
 					};
 				}
@@ -307,16 +288,21 @@ function GamepadWrapper() {
 
 		buildMappings();
 
-		window.addEventListener("gamepadconnected", function(e) {
+		function connectGamepad(gamepad) {
 			console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
-					e.gamepad.index, e.gamepad.id,
-					e.gamepad.buttons.length, e.gamepad.axes.length);
-			_this.mapScheme = checkGamepadMapping(e.gamepad);
+					gamepad.index, gamepad.id,
+					gamepad.buttons.length, gamepad.axes.length);
+			_this.mapScheme = checkGamepadMapping(gamepad);
 			_this.setMapping(MAPPINGS[_this.mapScheme]);
-			_this.gamepad_connected = true;
-			_this.gamepad = e.gamepad;
+			_this.gamepadConnected = true;
+			_this.gamepad = gamepad;
 			report_gamepad();
 			listener_report_interval = window.setInterval(report_listeners, 70);
+			window.clearInterval(chrome_gamepad_listener_interval);
+		}
+
+		window.addEventListener("gamepadconnected", function(e) {
+			connectGamepad(e.gamepad);
 		});
 
 
@@ -325,15 +311,17 @@ function GamepadWrapper() {
 		function setupChromeListener(){
             chrome_gamepad_listener_interval = window.setInterval(function() {
                 if(navigator.getGamepads()[0]) {
-                    if(!_this.gamepad_connected) $(window).trigger("gamepadconnected", {gamepad: navigator.getGamepads()[0]});
-                    window.clearInterval(chrome_gamepad_listener_interval);
+                    if(!_this.gamepadConnected) {
+                    	console.log("Chrome connecting!");
+                    	connectGamepad(navigator.getGamepads()[0]);
+                    } 
                 }
             }, 500);				
 		}
 		
 
 		function disconnectGamepad(){
-			_this.gamepad_connected = false;
+			_this.gamepadConnected = false;
 			_this.gamepad = null;
             window.clearInterval(listener_report_interval);
 
