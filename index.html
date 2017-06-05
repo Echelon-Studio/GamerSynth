@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script
+              src="https://code.jquery.com/jquery-3.2.1.min.js"
+              integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+              crossorigin="anonymous"></script>
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+           <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+            <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+            <!--[if lt IE 9]>
+              <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+              <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+            <![endif]-->
+ 
+    </head>
+    <body>
+        <div class="container">
+            <div class="jumbotron" style="background-color: aliceblue;">
+                <h1 class="center">GamerSynth</h1>
+                <h4>An audio synthesis engine using a gaming controller for input!</h4>
+                <table class="table table-bordered">
+                    <tr>                
+                        <td id="frequency"></td>
+                        <td id="attack"></td>
+                    </tr>
+                    <tr>
+                        <td id="decay"></td>
+                        <td id="wavetype"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    <script src="gamepadwrapper.js"></script>
+    <script src="synth.js"></script>
+    <script>
+        var wrapper;
+        var synth;
+        var minFrequency = 65;
+        var maxFrequency = 523;
+        var frequencyDistance = maxFrequency - minFrequency;
+        var frequency = minFrequency + (frequencyDistance * .5); //65 to 523
+
+        var freezeFrequency = false;
+        
+        var minAttack = 5;
+        var maxAttack = 20;
+        var attackDistance = maxAttack - minAttack;
+        var attack = 10;
+
+
+
+        var minDecay = 30;
+        var maxDecay = 300;
+        var decayDistance = maxDecay - minDecay;
+        var decay = minDecay + (decayDistance * .5);
+
+        var freezeDecay = false;
+
+        var pause = false;
+
+
+        var wavetypes = ["sine", "square", "sawtooth", "triangle"];
+        var wavetype = 0;
+
+        function updateReport(){
+            $("#frequency").text("Frequency: " + Math.floor(frequency) + "Hz");
+            $("#attack").text("Attack: " + attack);
+            $("#decay").text("Decay: " + Math.floor(decay) + " milliseconds");
+            $("#wavetype").text("wavetype: " + wavetypes[wavetype]);
+        }
+
+        function setStandardControls() {
+            console.log(wrapper.mapping);
+            wrapper.mapping.axes["LEFT_STICK_HORIZONTAL"].addListener("listener", function(value){
+                var normalized = (value + 1) / 2;
+                if (!freezeFrequency) {
+                    frequency = minFrequency + (frequencyDistance * normalized);
+                }
+            });
+
+
+            wrapper.mapping.buttons["LEFT_STICK"].addListener("listener", function(value){
+                if (value == 1) {
+                    freezeFrequency = !freezeFrequency;
+                    $("#frequency").toggleClass("warning");
+                }
+            });
+
+
+            /*
+            wrapper.mapping.axes["LEFT_STICK_VERTICAL"].addListener("listener", function(value){
+                var normalized = (value + 1) / 2;
+                attack = minAttack + (attackDistance * normalized);
+                $("#attack").text("Attack: " + Math.floor(attack));
+            });
+            */
+
+            wrapper.mapping.buttons["LB"].addListener("listener", function(value){
+                if (value == 1) {
+                    attack = Math.max(minAttack, attack - 1);
+                    
+                }
+            }, true);
+
+            wrapper.mapping.buttons["RB"].addListener("listener", function(value){
+                if (value == 1) {
+                    attack = Math.min(maxAttack, attack + 1);
+                }
+            }, true);
+
+
+
+
+            wrapper.mapping.axes["RIGHT_STICK_HORIZONTAL"].addListener("listener", function(value){
+                var normalized = (value + 1) / 2;
+                if (!freezeDecay) {
+                    decay = minDecay + (decayDistance * normalized);
+                }
+            });
+
+            wrapper.mapping.buttons["RIGHT_STICK"].addListener("listener", function(value){
+                if (value == 1) {
+                    freezeDecay = !freezeDecay;
+                    $("#decay").toggleClass("warning");
+                }
+            });
+
+            wrapper.mapping.buttons["A"].addListener("listener", function(value){
+                if (value == 1) {
+                    wavetype = (wavetype + 1) % wavetypes.length;
+                    synth.osc_type = wavetypes[wavetype];
+                }
+            });
+            wrapper.mapping.buttons["START"].addListener("pause", function(value){
+                if (value == 1) {
+                    pause = !pause;
+                }
+            });
+        }
+
+        function startSynth(){
+            var timeCount = 0;
+            setInterval((function(){
+                updateReport();
+                if (!pause) {
+                    timeCount = timeCount + 5;
+                    if (timeCount >= decay) {
+                        synth.playOscillation(frequency, attack, decay);
+                        timeCount = 0;
+                    }
+                }
+            }), 
+            20);
+        }
+
+
+        $(document).ready(function(){
+            wrapper = new GamepadWrapper();
+            synth = new Synth();
+            if (wrapper.supported) {
+                wrapper.addGamepadListener("html", function(){
+                    setStandardControls();
+                    startSynth();
+                }); 
+            }
+
+        });
+
+    //taken from https://modernweb.com/audio-synthesis-in-javascript/
+    /*
+window.onload = function() {
+
+    var audio = new (window.AudioContext || window.webkitAudioContext)(),
+        position = 0,
+        scale = {
+            g: 392,
+            f: 349.23,
+            e: 329.63,
+            b: 493.88
+        },
+        song = "gfefgg-fff-gbb-gfefggggffgfe---";
+
+    setInterval(play, 1000 / 4);
+
+    function createOscillator(freq) {
+        var attack = 10,
+            decay = 250,
+            gain = audio.createGain(),
+            osc = audio.createOscillator();
+
+        gain.connect(audio.destination);
+        gain.gain.setValueAtTime(0, audio.currentTime);
+        gain.gain.linearRampToValueAtTime(1, audio.currentTime + attack / 1000);
+        gain.gain.linearRampToValueAtTime(0, audio.currentTime + decay / 1000);
+
+        osc.frequency.value = freq;
+        osc.type = "square";
+        osc.connect(gain);
+        osc.start(0);
+
+        setTimeout(function() {
+            osc.stop(0);
+            osc.disconnect(gain);
+            gain.disconnect(audio.destination);
+        }, decay)
+    }
+
+    function play() {
+        var note = song.charAt(position),
+            freq = scale[note];
+        position += 1;
+        if(position >= song.length) {
+            position = 0;
+        }
+        if(freq) {
+            createOscillator(freq);
+        }
+    }
+};
+*/
+    </script>
+    </body>
+</html>

@@ -238,28 +238,39 @@ function GamepadWrapper() {
 		}
 
 
-
+		function ButtonListener(name, func, repeatValues){
+			this.name = name;
+			this.func = func;
+			this.repeatValues = !(!repeatValues);
+		}
 
 
 		function ControlMapping(name) {	
 			this.name = name;
 			this.value = 0;
 
-			var control_listeners = { };
-			this.addListener = function(name, func) {
-				control_listeners[name] = func;
+			var control_listeners = [ ];
+			this.addListener = function(name, func, repeatValues) {
+				var listener = new ButtonListener(name, func, repeatValues);
+				//control_listeners[name] = func;
+				control_listeners.push(listener);
 			};
 			this.removeListener = function(name) {
-				control_listeners[name] = null;
+				for (var i in control_listeners) {
+					if (control_listeners[i].name == name) {
+						control_listeners.splice(i, 1);
+						break;
+					}
+				}
 			};
 			this.updateListeners = function(value) {
-				if (value != this.value) {
-					Object.keys(control_listeners).forEach(function (key) { 
+					for (var key in control_listeners) {
 						if (control_listeners[key]) {
-							control_listeners[key](value, this.name);
+							if (this.value != value || control_listeners[key].repeatValues) {
+								control_listeners[key].func(value, this.name);
+							}
 						}
-					});
-				}
+					}
 				this.value = value;
 			};
 		};

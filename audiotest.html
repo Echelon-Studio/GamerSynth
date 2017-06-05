@@ -18,7 +18,50 @@
     <div id="gamepadDisplay"></div>
  
     <script>
+
+    $(document).ready(function(){
+        var audio = new (window.AudioContext || window.webkitAudioContext)();
+        var position = 0;
+        var scale = {g: 392, f: 349.23, e: 329.63, b: 493.88};
+        var song = "gfefgg-fff-gbb-gfefggggffgfe---";
+
+        var attack = 10;
+        var decay = 250;
+        var gain = audio.createGain();
+        var osc = audio.createOscillator();
+
+        gain.connect(audio.destination);
+        
+        
+        osc.type = "sine";
+        osc.connect(gain);           
+        osc.start(0);
+
+        function play() {     
+            var note = song.charAt(position),
+            freq = scale[note];
+            position += 1;
+            if(position >= song.length) {
+                position = 0;
+            }
+            if(freq) {
+                osc.frequency.value = freq;        
+                gain.gain.setValueAtTime(0, audio.currentTime);
+                gain.gain.linearRampToValueAtTime(1, audio.currentTime + attack / 1000);
+                gain.gain.linearRampToValueAtTime(0, audio.currentTime + decay / 1000);                
+                        
+            }
+
+            setTimeout(function(){
+                //osc.stop(0);
+                play();
+            }, decay);
+        }
+        play();
+    });
+
     //taken from https://modernweb.com/audio-synthesis-in-javascript/
+    /*
 window.onload = function() {
 
     var audio = new (window.AudioContext || window.webkitAudioContext)(),
@@ -45,7 +88,7 @@ window.onload = function() {
         gain.gain.linearRampToValueAtTime(0, audio.currentTime + decay / 1000);
 
         osc.frequency.value = freq;
-        osc.type = "sawtooth";
+        osc.type = "square";
         osc.connect(gain);
         osc.start(0);
 
@@ -68,6 +111,7 @@ window.onload = function() {
         }
     }
 };
+*/
     </script>
     </body>
 </html>

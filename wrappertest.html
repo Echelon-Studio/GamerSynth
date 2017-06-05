@@ -62,12 +62,18 @@ $(document).ready(function(){
             });            
         });
 
-        /*
-		wrapper.MAPPINGS[1].buttons.A.addListener("html", function(value){
-            $("#gamepadDisplay").html("A: " + value);
-
+        wrapper.addGamepadListener("test", function(){
+            wrapper.mapping.buttons.A.addListener("html", function(value){
+                if (value == 1) {
+                    console.log("A WAS PRESSED");    
+                }
+            });            
+            wrapper.mapping.axes["LEFT_STICK_HORIZONTAL"].addListener("html", function(value){
+                    console.log((value + 1) / 2);
+            });            
         });
-        */
+
+        
 	}
 });
 
