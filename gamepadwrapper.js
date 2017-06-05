@@ -354,6 +354,7 @@ function GamepadWrapper() {
         //setup an interval for Chrome
 
         setupChromeListener();
+        console.log("Wrapper loaded!");
 		
 	}
 }
