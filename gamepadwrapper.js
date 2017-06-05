@@ -185,7 +185,7 @@ function GamepadWrapper() {
 					for (var j in mapNames.buttons) {
 						var controlName = mapNames.buttons[j];
 						var control = map.buttons[controlName];
-						control.updateListeners(_this.gamepad.buttons[j].value);
+						control.updateListeners(_this.gamepad.buttons[j].pressed ? 1 : 0);
 						//console.log("Updated button " + controlName + "to " + control.value);
 					};
 					for (var j in mapNames.axes) {
