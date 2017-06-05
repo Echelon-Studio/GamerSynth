@@ -46,11 +46,11 @@ $(document).ready(function(){
 	} else {
         wrapper.addLoopListener("loop", function(gamepad){
             var html = "";
-            Object.keys(wrapper.MAPPINGS[1].buttons).forEach(function(key){
-                html+=key + ": " + wrapper.MAPPINGS[1].buttons[key].value + "<br/>";
+            Object.keys(wrapper.MAPPINGS[wrapper.mapScheme].buttons).forEach(function(key){
+                html+=key + ": " + wrapper.MAPPINGS[wrapper.mapScheme].buttons[key].value + "<br/>";
             });
-            Object.keys(wrapper.MAPPINGS[1].axes).forEach(function(key){
-                html+=key + ": " + wrapper.MAPPINGS[1].axes[key].value + "<br/>";
+            Object.keys(wrapper.MAPPINGS[wrapper.mapScheme].axes).forEach(function(key){
+                html+=key + ": " + wrapper.MAPPINGS[wrapper.mapScheme].axes[key].value + "<br/>";
             });
             $("#gamepadDisplay").html(html);
         });
