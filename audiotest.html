@@ -45,7 +45,7 @@ window.onload = function() {
         gain.gain.linearRampToValueAtTime(0, audio.currentTime + decay / 1000);
 
         osc.frequency.value = freq;
-        osc.type = "square";
+        osc.type = "sawtooth";
         osc.connect(gain);
         osc.start(0);
 

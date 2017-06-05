@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+        <script
+			  src="https://code.jquery.com/jquery-3.2.1.min.js"
+			  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+			  crossorigin="anonymous"></script>
+ 
+    </head>
+    <body>
+ 
+        <div id="gamepadPrompt"></div>
+        <div id="gamepadDisplay"></div>
+        <script src="gamepadwrapper.js"></script>
+        <script>
+/*
+function reportOnGamepad(gp) {
+    var html = "";
+        html += "id: "+gp.id+"<br/>";
+
+    for(var i=0;i<gp.buttons.length;i++) {
+        html+= "Button "+(i+1)+": ";
+        if(gp.buttons[i].pressed) html+= " pressed";
+        html+= "<br/>";
+    }
+
+    for(var i=0;i<gp.axes.length; i+=2) {
+        html+= "Stick "+(Math.ceil(i/2)+1)+": "+gp.axes[i]+","+gp.axes[i+1]+"<br/>";
+    }
+
+    $("#gamepadDisplay").html(html);
+}
+*/
+
+
+$(document).ready(function(){
+	var wrapper = new GamepadWrapper();
+	if (!wrapper.supported) {
+    	var prompt = "Sorry, your browser does not have gamepad support!";
+        $("#gamepadPrompt").text(prompt);
+	} else {
+        wrapper.addLoopListener("loop", function(gamepad){
+            var html = "";
+            Object.keys(wrapper.MAPPINGS[1].buttons).forEach(function(key){
+                html+=key + ": " + wrapper.MAPPINGS[1].buttons[key].value + "<br/>";
+            });
+            Object.keys(wrapper.MAPPINGS[1].axes).forEach(function(key){
+                html+=key + ": " + wrapper.MAPPINGS[1].axes[key].value + "<br/>";
+            });
+            $("#gamepadDisplay").html(html);
+        });
+        /*
+		wrapper.MAPPINGS[1].buttons.A.addListener("html", function(value){
+            $("#gamepadDisplay").html("A: " + value);
+
+        });
+        */
+	}
+});
+
+    </script>
+    </body>
+</html>
