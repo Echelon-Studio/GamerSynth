@@ -3,7 +3,7 @@
 function Synth(){
     this.audio = new (window.AudioContext || window.webkitAudioContext)();
     var audio = this.audio;
-    this.osc_type = "square";
+    this.osc_type = "sine";
 
     this.playOscillation = function(freq, attack, decay) {
         if (!attack) attack = 10;
