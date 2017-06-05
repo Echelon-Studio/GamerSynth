@@ -44,16 +44,22 @@ $(document).ready(function(){
     	var prompt = "Sorry, your browser does not have gamepad support!";
         $("#gamepadPrompt").text(prompt);
 	} else {
-        wrapper.addLoopListener("loop", function(gamepad){
-            var html = "";
-            Object.keys(wrapper.MAPPINGS[wrapper.mapScheme].buttons).forEach(function(key){
-                html+=key + ": " + wrapper.MAPPINGS[wrapper.mapScheme].buttons[key].value + "<br/>";
-            });
-            Object.keys(wrapper.MAPPINGS[wrapper.mapScheme].axes).forEach(function(key){
-                html+=key + ": " + wrapper.MAPPINGS[wrapper.mapScheme].axes[key].value + "<br/>";
-            });
-            $("#gamepadDisplay").html(html);
+        wrapper.addGamepadListener("html", function(gamepad){
+            console.log(wrapper.mapping);
+            console.log(wrapper.gamepad);
+            console.log(wrapper.gamepadConnected);
+            wrapper.addLoopListener("loop", function(gamepad){
+                var html = "";
+                Object.keys(wrapper.getMapping().buttons).forEach(function(key){
+                    html+=key + ": " + wrapper.getMapping().buttons[key].value + "<br/>";
+                });
+                Object.keys(wrapper.getMapping().axes).forEach(function(key){
+                    html+=key + ": " + wrapper.getMapping().axes[key].value + "<br/>";
+                });
+                $("#gamepadDisplay").html(html);
+            });            
         });
+
         /*
 		wrapper.MAPPINGS[1].buttons.A.addListener("html", function(value){
             $("#gamepadDisplay").html("A: " + value);
