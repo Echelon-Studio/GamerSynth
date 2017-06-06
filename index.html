@@ -60,6 +60,7 @@
                 <br/>
                 Press A (or X if using Playstation) to change wavetype.
                 <br/>
+                When recording a waveform, use the left stick to control the real (cosine)(horizontal) and imaginary(sine)(vertical) waves.
                 </p>
                 <table class="table table-bordered">
                     <tr>                
@@ -71,6 +72,7 @@
                         <td id="wavetype"></td>
                     </tr>
                 </table>
+                <button id="record">record wave form</button>
             </div>
         </div>
     <script src="gamepadwrapper.js"></script>
@@ -79,21 +81,21 @@
         var wrapper;
         var synth;
         var minFrequency = 65;
-        var maxFrequency = 523;
+        var maxFrequency = 262;
         var frequencyDistance = maxFrequency - minFrequency;
         var frequency = minFrequency + (frequencyDistance * .5); //65 to 523
 
         var freezeFrequency = false;
         
-        var minAttack = 5;
-        var maxAttack = 20;
+        var minAttack = 2;
+        var maxAttack = 100;
         var attackDistance = maxAttack - minAttack;
         var attack = 10;
 
 
 
         var minDecay = 30;
-        var maxDecay = 300;
+        var maxDecay = 1000;
         var decayDistance = maxDecay - minDecay;
         var decay = minDecay + (decayDistance * .5);
 
@@ -101,9 +103,27 @@
 
         var pause = false;
 
+        var recording = false;
 
-        var wavetypes = ["sine", "square", "sawtooth", "triangle"];
+        var real = new Float32Array(3);
+        var imag = new Float32Array(3);
+
+        real[0] = 0;
+        imag[0] = 0;
+        real[1] = 1;
+        imag[1] = 0;
+        real[2] = 1;
+        imag[2] = 1;
+
+        var customWaves = {keyboard: [real, imag]}
+        var customWaveCount = 1;
+
+        var recordingArray = [];
+
+
+        var wavetypes = ["sine", "square", "sawtooth", "triangle", "keyboard"];
         var wavetype = 0;
+        var customWaveStart = 4;
 
         function updateReport(){
             $("#frequency").text("Frequency: " + Math.floor(frequency) + "Hz");
@@ -115,6 +135,7 @@
         function setStandardControls() {
             console.log(wrapper.mapping);
             wrapper.mapping.axes["LEFT_STICK_HORIZONTAL"].addListener("listener", function(value){
+                if (recording) return;
                 var normalized = (value + 1) / 2;
                 if (!freezeFrequency) {
                     frequency = minFrequency + (frequencyDistance * normalized);
@@ -123,6 +144,7 @@
 
 
             wrapper.mapping.buttons["LEFT_STICK"].addListener("listener", function(value){
+                if (recording) return;
                 if (value == 1) {
                     freezeFrequency = !freezeFrequency;
                     $("#frequency").toggleClass("warning");
@@ -155,6 +177,7 @@
 
 
             wrapper.mapping.axes["RIGHT_STICK_HORIZONTAL"].addListener("listener", function(value){
+                if (recording) return;
                 var normalized = (value + 1) / 2;
                 if (!freezeDecay) {
                     decay = minDecay + (decayDistance * normalized);
@@ -162,6 +185,7 @@
             });
 
             wrapper.mapping.buttons["RIGHT_STICK"].addListener("listener", function(value){
+                if (recording) return;
                 if (value == 1) {
                     freezeDecay = !freezeDecay;
                     $("#decay").toggleClass("warning");
@@ -181,19 +205,87 @@
             });
         }
 
+        var recording_interval = null;
+        function startRecording(){
+            recordingArray = [];
+            recording = true;
+            recording_interval = window.setInterval(function(){
+                if (recording) {
+                    var data = [wrapper.mapping.axes["LEFT_STICK_HORIZONTAL"].value, wrapper.mapping.axes["LEFT_STICK_VERTICAL"].value];
+                    recordingArray[recordingArray.length] = data;
+                    //console.log("Recorded " + data[0] + " at " + recordingArray.length);
+                    //console.log("Recorded " + data[1] + " at " + recordingArray.length);
+                }
+            }, 325);
+            $("#record").text("Recording...");
+        }
+
+        function stopRecording(){
+            pause = true;
+            recording = false;
+            window.clearInterval(recording_interval);
+            var reals = new Float32Array(recordingArray.length + 1);
+            var imag = new Float32Array(recordingArray.length + 1);
+            reals[0] = 0;
+            imag[0] = 0;
+            for (i = 0; i < recordingArray.length; i++) { 
+                var index = i + 1;
+                //console.log("Index: " + index);
+                reals[index] = recordingArray[i][0];
+                imag[index] = recordingArray[i][1];
+                //console.log("in recorded array: " + recordingArray[i][0] + ", " + recordingArray[i][1]);
+                //console.log("In built wave: " + reals[index] + ", " + imag[index]);
+            }
+            console.log(reals);
+            console.log(imag);
+            customWaveCount = customWaveCount + 1;
+            customWaves["customwave" + (customWaveCount)] = [reals, imag];
+            wavetypes.push("customwave" + (customWaveCount));
+            pause = false;
+            updateReport();
+            wavetype = wavetypes.length - 1;
+            updateReport();
+            $("#record").text("Record wave form");
+        }
+
+
+
         function startSynth(){
             var timeCount = 0;
             setInterval((function(){
-                updateReport();
-                if (!pause) {
+                if (!pause && !recording) {
+                    updateReport();
                     timeCount = timeCount + 5;
-                    if (timeCount >= decay) {
-                        synth.playOscillation(frequency, attack, decay);
+                    if (timeCount >= decay + attack) {
+                        var wave = null;
+                        if (wavetype >= customWaveStart) {
+                            //TODO: stop building wavetypes on the fly
+                            var waveArrays = customWaves[wavetypes[wavetype]];
+                            wave = synth.audio.createPeriodicWave(waveArrays[0], waveArrays[1]);
+                        }
+                        synth.playOscillation(frequency, attack, decay, wave);
                         timeCount = 0;
                     }
                 }
             }), 
-            20);
+            5);
+            $("#record").click(function(){
+                if (recording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            });
+
+            wrapper.mapping.buttons["SELECT"].addListener("listener", function(value){
+                if (value == 1){
+                    if (recording) {
+                        stopRecording();
+                    } else {
+                        startRecording();
+                    }
+                }
+            })
         }
 
 

@@ -5,12 +5,15 @@ function Synth(){
     var audio = this.audio;
     this.osc_type = "sine";
 
-    this.playOscillation = function(freq, attack, decay) {
+    this.playOscillation = function(freq, attack, decay, wave) {
         if (!attack) attack = 10;
         if (!decay) decay = 250;
         var gain = audio.createGain();
         var osc = audio.createOscillator();
 
+        if (wave) {
+            osc.setPeriodicWave(wave);
+        }
         gain.connect(audio.destination);
         gain.gain.setValueAtTime(0, audio.currentTime);
         gain.gain.linearRampToValueAtTime(1, audio.currentTime + attack / 1000);
@@ -21,10 +24,12 @@ function Synth(){
         osc.connect(gain);
         osc.start(0);
 
+        
         setTimeout(function() {
             osc.stop(0);
             osc.disconnect(gain);
             gain.disconnect(audio.destination);
-        }, decay)
+        }, decay + attack)
+        
     }
 }
